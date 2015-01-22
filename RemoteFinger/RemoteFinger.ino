@@ -18,6 +18,10 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <Servo.h> 
+#include "DHT.h"
+ 
+#define DHTPIN 7 // what pin we're connected to
+#define DHTTYPE DHT11 // DHT 11
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -27,6 +31,7 @@ IPAddress ip(192,168,1, 177);
 boolean estado = false;
 Servo myservo;  // create servo object to control a servo 
                 // a maximum of eight servo objects can be created 
+DHT dht(DHTPIN, DHTTYPE); //temp humidity
  
 int pos = 0;    // variable to store the servo position 
 int step = 45;
@@ -53,9 +58,15 @@ void setup() {
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
 
+  //servo
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object 
 
   myservo.write(0);
+
+  //temp
+  Serial.println("DHTxx test!");
+ 
+  dht.begin();
 }
 
 
@@ -156,7 +167,23 @@ void sendDefaultPage(EthernetClient client) {
 
   client.println("<body>");
   client.print("Temperatura: ");
-  client.println("N/A");
+  // Read temperature as Celsius
+  float t = dht.readTemperature();
+  
+  if(isnan(t)) {
+    client.println("Error");
+  } else {
+    client.println(t);
+  }
+  client.println("<BR/>");
+  client.print("Humedad: ");
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  if(isnan(h)) {
+    client.println("Error");
+  } else {
+    client.println(h);
+  }
   client.println("<BR/>");
   client.print("Estado: ");
   client.println(estado?"Encendido":"Apagado");
